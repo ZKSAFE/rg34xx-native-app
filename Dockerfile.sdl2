@@ -1,0 +1,49 @@
+FROM ubuntu:20.04
+
+# 设置时区避免交互式提示
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Shanghai
+
+# 安装依赖
+RUN apt-get update && apt-get install -y \
+    gcc-aarch64-linux-gnu \
+    make \
+    build-essential \
+    file \
+    libsdl2-dev \
+    libsdl2-ttf-dev \
+    pkg-config \
+    curl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# 验证交叉编译器
+RUN aarch64-linux-gnu-gcc --version
+
+# 验证SDL2
+RUN pkg-config --cflags --libs sdl2 SDL2_ttf
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制源代码
+COPY . .
+
+# 下载Noto Sans CJK字体 (支持中文)
+RUN curl -L -o NotoSansCJK-Regular.ttc \
+    "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf"
+
+# 编译SDL2版本 (ARM)
+RUN make clean && make sdl2-arm CC=aarch64-linux-gnu-gcc
+
+# 显示编译结果
+RUN ls -lh rg34xx-sdl2-arm
+
+# 验证文件类型
+RUN file rg34xx-sdl2-arm
+
+# 显示字体文件
+RUN ls -lh NotoSans*.ttc
+
+# 默认命令
+CMD ["ls", "-la"]
